@@ -5,6 +5,31 @@ var bodyParser = require('body-parser')
 const Docker = require('dockerode');
 const app = express()
 
+async function pullImageIfNotFound(docker, name) {
+  return new Promise((resolve, reject) => {
+    docker.listImages((err, images) => {
+      if (err) {
+        reject(err);
+      }
+      else if (images.find(image => image.RepoTags.find(tag => tag === name)) === undefined) {
+        docker.pull(name)
+          .then(res => {
+            res.resume();
+            res.on('end', () => {
+              if (!res.complete)
+                reject(new Error('docker pull error'));
+              else
+                resolve();
+            });
+          })
+          .catch(reject);
+      } else {
+        resolve();
+      }
+    })
+  })
+}
+
 app.get('/', function (req, res) {
   res.redirect('/www/index.html')
 })
@@ -19,8 +44,13 @@ app.use('/monaco/:path([a-zA-z0-9_\\-/.]+)', (req, res) => {
 
 app.post('/api/execute', express.text(), async (req, res) => {
   let docker = new Docker({ socketPath: '/var/run/docker.sock' });
+  await pullImageIfNotFound(docker, "node:17").catch(err => {
+    console.log(err);
+    res.send("error");
+  });
+
   let container = await docker.createContainer({
-    Image: 'node',
+    Image: 'node:17',
     Cmd: ['node', '--eval', req.body],
     HostConfig: {
       AutoRemove: true
@@ -28,7 +58,6 @@ app.post('/api/execute', express.text(), async (req, res) => {
     Tty: true,
     AttachStdout: true,
   });
-  let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   let output = await container.attach({ stream: true, stdout: true, stderr: false });
   await container.start();
 
