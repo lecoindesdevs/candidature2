@@ -42,16 +42,36 @@ app.use('/monaco/:path([a-zA-z0-9_\\-/.]+)', (req, res) => {
   res.sendFile(pathfile);
 })
 
-app.post('/api/execute', express.text(), async (req, res) => {
+app.post('/api/execute', express.json(), async (req, res) => {
+  console.log(req.body);
+  const languages = {
+    python3: {
+      docker_image: 'python:3.9',
+      command: ['python', '-c'],
+    },
+    python2: {
+      docker_image: 'python:2.7',
+      command: ['python', '-c'],
+    },
+    node: {
+      docker_image: 'node:latest',
+      command: ['node', '--eval'],
+    },
+  };
+  const language = languages[req.body.language];
+  if (!language) {
+    res.status(400).send('Language not supported');
+    return;
+  }
   let docker = new Docker({ socketPath: '/var/run/docker.sock' });
-  await pullImageIfNotFound(docker, "node:17").catch(err => {
+  await pullImageIfNotFound(docker, language.docker_image).catch(err => {
     console.log(err);
     res.send("error");
   });
 
   let container = await docker.createContainer({
-    Image: 'node:17',
-    Cmd: ['node', '--eval', req.body],
+    Image: language.docker_image,
+    Cmd: language.command.concat([req.body.code]),
     HostConfig: {
       AutoRemove: true
     },
