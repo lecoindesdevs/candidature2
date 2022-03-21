@@ -1,4 +1,4 @@
-let currentLanguage = "python3";
+let currentLanguage = "";
 document.addEventListener('DOMContentLoaded', event => {
     //$(".dropdown-trigger").dropdown();
     let editor;
@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', event => {
     });
     fetch('/api/languages').then(res => res.json()).then(languages => {
         let dropdown = document.getElementById('language-dropdown');
+
+        currentLanguage = languages[0].language;
+        document.getElementById("language").innerText = languages[0].name;
+        
         languages.forEach(lang => {
             let option = document.createElement('a');
             option.classList.add('drop-language');
