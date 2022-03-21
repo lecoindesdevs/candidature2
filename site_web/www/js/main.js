@@ -12,6 +12,29 @@ document.addEventListener('DOMContentLoaded', event => {
             language: 'javascript'
         });
     });
+    fetch('/api/languages').then(res => res.json()).then(languages => {
+        let dropdown = document.getElementById('language-dropdown');
+        languages.forEach(lang => {
+            let option = document.createElement('a');
+            option.classList.add('drop-language');
+            option.dataset.language = lang.language;
+            option.innerText = lang.name;
+            option.addEventListener('click', (e) => {
+                const monaco_languages = {
+                    python3: "python",
+                    python2: "python",
+                    node: "javascript",
+                }
+                currentLanguage = e.target.dataset.language;
+                document.getElementById("language").innerText = e.target.innerText;
+                // var editor = monaco.editor.getModels()[0];
+                monaco.editor.setModelLanguage(editor.getModel(), monaco_languages[currentLanguage]);
+            })
+            let li = document.createElement('li');
+            li.appendChild(option);
+            dropdown.appendChild(li);
+        });
+    });
 
     document.getElementById('run').addEventListener('click', async () => {
         var code = editor.getValue();

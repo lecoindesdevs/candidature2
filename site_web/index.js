@@ -5,6 +5,24 @@ var bodyParser = require('body-parser')
 const Docker = require('dockerode');
 const app = express()
 
+const languages = {
+  python3: {
+    name: 'Python 3.9',
+    docker_image: 'python:3.9',
+    command: ['python', '-c'],
+  },
+  python2: {
+    name: 'Python 2.7',
+    docker_image: 'python:2.7',
+    command: ['python', '-c'],
+  },
+  node: {
+    name: 'Node.js',
+    docker_image: 'node:latest',
+    command: ['node', '--eval'],
+  },
+};
+
 async function pullImageIfNotFound(docker, name) {
   return new Promise((resolve, reject) => {
     docker.listImages((err, images) => {
@@ -41,23 +59,17 @@ app.use('/monaco/:path([a-zA-z0-9_\\-/.]+)', (req, res) => {
   let pathfile = path.join(__dirname,"node_modules", "monaco-editor", "dev",req.params.path)
   res.sendFile(pathfile);
 })
-
+app.get('/api/languages', (req, res) => {
+  res.json(Object.keys(languages).map(langname => {
+    return {
+      name: languages[langname].name, 
+      language: langname
+    }
+  }));
+})
 app.post('/api/execute', express.json(), async (req, res) => {
   console.log(req.body);
-  const languages = {
-    python3: {
-      docker_image: 'python:3.9',
-      command: ['python', '-c'],
-    },
-    python2: {
-      docker_image: 'python:2.7',
-      command: ['python', '-c'],
-    },
-    node: {
-      docker_image: 'node:latest',
-      command: ['node', '--eval'],
-    },
-  };
+  
   const language = languages[req.body.language];
   if (!language) {
     res.status(400).send('Language not supported');
