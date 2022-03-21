@@ -1,0 +1,12 @@
+# Create containers within container : https://stackoverflow.com/a/54831680
+version: '3.9'
+services:
+  web:
+    build: site_web
+    ports:
+      - 80:8080
+    volumes:
+      - ./site_web:/app
+      - ./site_web/www:/var/www
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
